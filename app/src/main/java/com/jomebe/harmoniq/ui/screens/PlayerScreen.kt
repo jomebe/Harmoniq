@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jomebe.harmoniq.domain.Track
 import com.jomebe.harmoniq.player.YouTubePlayer
+import com.jomebe.harmoniq.ui.theme.Cyan
 import com.jomebe.harmoniq.ui.theme.Ink
 import com.jomebe.harmoniq.ui.theme.TextSecondary
 import com.jomebe.harmoniq.ui.theme.Violet
