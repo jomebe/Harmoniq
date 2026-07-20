@@ -26,7 +26,7 @@ private class PlayerBridge(
     @JavascriptInterface fun onError(code: String) = onError.invoke(code)
 }
 
-@SuppressLint("SetJavaScriptEnabled")
+@SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
 @Composable
 fun YouTubePlayer(
     videoId: String,
