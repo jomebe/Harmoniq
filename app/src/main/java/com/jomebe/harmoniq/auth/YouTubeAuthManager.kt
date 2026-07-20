@@ -86,7 +86,8 @@ class YouTubeAuthManager(
                 )
             )
         } catch (error: UserRecoverableAuthException) {
-            _state.value = AuthState.RecoveryRequired(error.intent)
+            _state.value = error.intent?.let(AuthState::RecoveryRequired)
+                ?: AuthState.Error("YouTube 권한 승인 화면을 열지 못했습니다.")
         } catch (error: IOException) {
             _state.value = AuthState.Error("네트워크 연결을 확인해주세요.")
         } catch (error: GoogleAuthException) {
