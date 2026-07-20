@@ -32,9 +32,9 @@ class RecommendationEngineTest {
 
     @Test
     fun `seed queries include recent artists and defaults`() {
-        val queries = engine.seedQueries(listOf(track("1", "Artist Topic")), emptyList(), emptyList())
+        val queries = engine.seedQueries(listOf(track("1", "Artist Topic")))
         assertTrue(queries.any { it.contains("Artist") })
-        assertTrue(queries.any { it == "최신 음악" })
+        assertTrue(queries.any { it == "electronic" })
     }
 
     private fun track(id: String, artist: String, tags: List<String> = emptyList()) =

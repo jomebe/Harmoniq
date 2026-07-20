@@ -18,7 +18,6 @@ jobs:
       - name: Configure Android SDK path
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          echo "YOUTUBE_API_KEY=${{ secrets.YOUTUBE_API_KEY }}" >> local.properties
       - name: Unit tests, lint and APK build
         run: ./gradlew testDebugUnitTest lintDebug assembleDebug
       - name: Upload debug APK

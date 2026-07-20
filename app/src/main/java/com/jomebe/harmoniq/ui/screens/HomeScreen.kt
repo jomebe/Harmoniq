@@ -95,7 +95,7 @@ fun HomeScreen(
             }
         }
 
-        item { SectionTitle("취향을 반영한 믹스", "앱에서 들은 음악과 좋아요를 바탕으로 골랐어요") }
+        item { SectionTitle("취향을 반영한 믹스", "앱에서 들은 아티스트와 장르를 바탕으로 골랐어요") }
         item {
             LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 items(personalized.ifEmpty { popular.take(12) }, key = Track::id) { track ->
@@ -105,7 +105,7 @@ fun HomeScreen(
             Spacer(Modifier.height(30.dp))
         }
 
-        item { SectionTitle("한국 인기 음악", "지금 많이 재생되는 음악") }
+        item { SectionTitle("Audius 인기 음악", "지금 커뮤니티에서 많이 재생되는 음악") }
         items(popular.take(12), key = Track::id) { track ->
             TrackRow(track, { onPlay(track, popular) }, Modifier.padding(horizontal = 12.dp))
         }

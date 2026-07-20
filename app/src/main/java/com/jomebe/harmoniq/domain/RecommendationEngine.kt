@@ -32,13 +32,14 @@ class RecommendationEngine {
         }
     }
 
-    fun seedQueries(recent: List<Track>, liked: List<Track>, subscriptions: List<ArtistSeed>): List<String> {
-        val artistSeeds = (liked.map(Track::artist) + recent.map(Track::artist) + subscriptions.map(ArtistSeed::name))
+    fun seedQueries(recent: List<Track>): List<String> {
+        val artistSeeds = recent.map(Track::artist)
             .map { normalizeDisplay(it) }
             .filter(String::isNotBlank)
             .distinct()
             .take(6)
-        return (artistSeeds.map { "$it music" } + listOf("최신 음악", "인기 음악")).distinct().take(8)
+        val tagSeeds = recent.flatMap(Track::tags).filter(String::isNotBlank).distinct().take(4)
+        return (artistSeeds + tagSeeds + listOf("electronic", "hip hop", "lofi")).distinct().take(10)
     }
 
     private fun normalize(value: String) = value.lowercase().replace(Regex("[^a-z0-9가-힣]"), "")

@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Icon
@@ -139,7 +140,7 @@ fun ArtworkCard(track: Track, onClick: () -> Unit, modifier: Modifier = Modifier
 }
 
 @Composable
-fun MiniPlayer(track: Track, onOpen: () -> Unit, onNext: () -> Unit) {
+fun MiniPlayer(track: Track, isPlaying: Boolean, onOpen: () -> Unit, onTogglePlayback: () -> Unit, onNext: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -161,7 +162,9 @@ fun MiniPlayer(track: Track, onOpen: () -> Unit, onNext: () -> Unit) {
             Text(track.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
             Text(track.artist, maxLines = 1, overflow = TextOverflow.Ellipsis, color = TextSecondary, style = MaterialTheme.typography.bodySmall)
         }
-        IconButton(onClick = onOpen) { Icon(Icons.Default.PlayArrow, "플레이어 열기") }
+        IconButton(onClick = onTogglePlayback) {
+            Icon(if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, if (isPlaying) "일시정지" else "재생")
+        }
         IconButton(onClick = onNext) { Icon(Icons.Default.SkipNext, "다음 곡") }
     }
 }

@@ -1,6 +1,8 @@
 package com.jomebe.harmoniq
 
+import android.Manifest
 import android.os.Bundle
+import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -42,7 +44,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.jomebe.harmoniq.auth.AuthState
 import com.jomebe.harmoniq.ui.AppViewModel
 import com.jomebe.harmoniq.ui.components.AuroraBackground
 import com.jomebe.harmoniq.ui.components.MiniPlayer
@@ -71,20 +72,15 @@ private data class Tab(val label: String, val icon: androidx.compose.ui.graphics
 private fun HarmoniqApp(viewModel: AppViewModel) {
     val ui by viewModel.uiState.collectAsState()
     val library by viewModel.library.collectAsState()
-    val auth by viewModel.authState.collectAsState()
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showPlayer by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
 
-    val signInLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        viewModel.completeSignIn(it.data)
-    }
-    val recoveryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        viewModel.retryAuthorization()
-    }
-
-    LaunchedEffect(auth) {
-        if (auth is AuthState.RecoveryRequired) recoveryLauncher.launch((auth as AuthState.RecoveryRequired).intent)
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= 33) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
     LaunchedEffect(ui.error) {
         ui.error?.let {
@@ -107,7 +103,13 @@ private fun HarmoniqApp(viewModel: AppViewModel) {
             bottomBar = {
                 Column {
                     ui.queue.current?.let { track ->
-                        MiniPlayer(track, onOpen = { showPlayer = true }, onNext = viewModel::playNext)
+                        MiniPlayer(
+                            track = track,
+                            isPlaying = ui.isPlaying,
+                            onOpen = { showPlayer = true },
+                            onTogglePlayback = viewModel::togglePlayback,
+                            onNext = viewModel::playNext
+                        )
                     }
                     NavigationBar {
                         tabs.forEachIndexed { index, tab ->
@@ -142,12 +144,7 @@ private fun HarmoniqApp(viewModel: AppViewModel) {
                             viewModel.play(track, source)
                             showPlayer = true
                         }
-                        else -> ProfileScreen(
-                            auth,
-                            onSignIn = { signInLauncher.launch(viewModel.signInIntent()) },
-                            onSignOut = viewModel::signOut,
-                            onClearHistory = viewModel::clearHistory
-                        )
+                        else -> ProfileScreen(onClearHistory = viewModel::clearHistory)
                     }
                 }
             }
@@ -162,10 +159,11 @@ private fun HarmoniqApp(viewModel: AppViewModel) {
                 PlayerScreen(
                     track = track,
                     isSaved = library.saved.any { it.id == track.id },
+                    isPlaying = ui.isPlaying,
                     onClose = { showPlayer = false },
                     onPrevious = viewModel::playPrevious,
                     onNext = viewModel::playNext,
-                    onEnded = viewModel::onTrackEnded,
+                    onTogglePlayback = viewModel::togglePlayback,
                     onToggleSaved = {
                         if (library.saved.any { it.id == track.id }) viewModel.unsave(track) else viewModel.save(track)
                     }

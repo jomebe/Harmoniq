@@ -59,7 +59,7 @@ fun SearchScreen(
         )
 
         if (results.isEmpty()) {
-            EmptyState("듣고 싶은 음악을 찾아보세요", "YouTube의 방대한 음악을 검색할 수 있어요")
+            EmptyState("듣고 싶은 음악을 찾아보세요", "Audius의 공개 음악 카탈로그를 검색할 수 있어요")
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f),

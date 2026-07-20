@@ -2,12 +2,11 @@ package com.jomebe.harmoniq
 
 import android.content.Context
 import androidx.room.Room
-import com.jomebe.harmoniq.auth.YouTubeAuthManager
 import com.jomebe.harmoniq.data.local.HarmoniqDatabase
-import com.jomebe.harmoniq.data.remote.AuthTokenStore
-import com.jomebe.harmoniq.data.remote.YouTubeClient
+import com.jomebe.harmoniq.data.remote.AudiusClient
 import com.jomebe.harmoniq.data.repository.MusicRepository
 import com.jomebe.harmoniq.domain.RecommendationEngine
+import com.jomebe.harmoniq.player.PlaybackConnection
 
 class AppContainer(context: Context) {
     private val database = Room.databaseBuilder(
@@ -16,9 +15,8 @@ class AppContainer(context: Context) {
         "harmoniq.db"
     ).fallbackToDestructiveMigration().build()
 
-    private val tokenStore = AuthTokenStore()
-    private val api = YouTubeClient.create(tokenStore)
+    private val api = AudiusClient.create()
 
-    val authManager = YouTubeAuthManager(context, tokenStore)
+    val playback = PlaybackConnection(context)
     val repository = MusicRepository(api, database.dao(), RecommendationEngine())
 }

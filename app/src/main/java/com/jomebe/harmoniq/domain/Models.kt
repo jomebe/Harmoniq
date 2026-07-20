@@ -5,15 +5,10 @@ data class Track(
     val title: String,
     val artist: String,
     val thumbnailUrl: String,
+    val streamUrl: String = "",
     val durationText: String = "",
     val publishedAt: String = "",
     val tags: List<String> = emptyList()
-)
-
-data class ArtistSeed(
-    val channelId: String,
-    val name: String,
-    val thumbnailUrl: String = ""
 )
 
 data class PlaybackQueue(
@@ -37,9 +32,3 @@ data class PlaybackQueue(
     fun next(): PlaybackQueue = if (hasNext) copy(currentIndex = currentIndex + 1) else this
     fun previous(): PlaybackQueue = if (currentIndex > 0) copy(currentIndex = currentIndex - 1) else this
 }
-
-data class UserProfile(
-    val displayName: String,
-    val email: String,
-    val photoUrl: String?
-)

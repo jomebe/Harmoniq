@@ -23,12 +23,12 @@ interface HarmoniqDao {
     @Query("SELECT * FROM saved_tracks ORDER BY savedAt DESC")
     fun observeSavedTracks(): Flow<List<SavedTrackEntity>>
 
-    @Query("SELECT EXISTS(SELECT 1 FROM saved_tracks WHERE videoId = :videoId)")
-    fun observeIsSaved(videoId: String): Flow<Boolean>
+    @Query("SELECT EXISTS(SELECT 1 FROM saved_tracks WHERE trackId = :trackId)")
+    fun observeIsSaved(trackId: String): Flow<Boolean>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun save(item: SavedTrackEntity)
 
-    @Query("DELETE FROM saved_tracks WHERE videoId = :videoId")
-    suspend fun unsave(videoId: String)
+    @Query("DELETE FROM saved_tracks WHERE trackId = :trackId")
+    suspend fun unsave(trackId: String)
 }
