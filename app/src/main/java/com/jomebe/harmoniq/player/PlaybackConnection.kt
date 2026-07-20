@@ -43,7 +43,7 @@ class PlaybackConnection(context: Context) : Player.Listener {
         if (playable.isEmpty()) return@withController
         val selectedId = tracks.getOrNull(startIndex)?.id
         val playableIndex = playable.indexOfFirst { it.id == selectedId }.coerceAtLeast(0)
-        player.setMediaItems(playable.map(Track::toMediaItem), playableIndex, C.TIME_UNSET)
+        player.setMediaItems(playable.map { it.toMediaItem() }, playableIndex, C.TIME_UNSET)
         player.prepare()
         player.play()
     }
