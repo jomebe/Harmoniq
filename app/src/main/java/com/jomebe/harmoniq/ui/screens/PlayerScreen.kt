@@ -97,7 +97,7 @@ fun PlayerScreen(
                 }
             }
             Spacer(Modifier.height(24.dp))
-            Text("Jamendo/내 기기 음악 · 백그라운드 재생 · 자동 다음 곡", color = TextSecondary, style = MaterialTheme.typography.labelMedium)
+            Text("내 기기 음악 · 백그라운드 재생 · 자동 다음 곡", color = TextSecondary, style = MaterialTheme.typography.labelMedium)
         }
     }
 }

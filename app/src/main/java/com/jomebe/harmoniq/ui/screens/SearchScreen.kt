@@ -63,7 +63,7 @@ fun SearchScreen(
         )
 
         if (results.isEmpty() && artists.isEmpty()) {
-            EmptyState("음악과 아티스트를 찾아보세요", if (query.isBlank()) "Jamendo의 무료 음악과 내 기기 음악을 함께 검색합니다" else "정확히 일치하는 아티스트가 없거나 재생 가능한 곡이 없습니다. 내 기기 음악도 확인해 보세요.")
+            EmptyState("음악과 아티스트를 찾아보세요", if (query.isBlank()) "YouTube 음악과 내 기기 음악을 함께 검색합니다" else "검색 결과가 없습니다. 내 기기 음악도 확인해 보세요.")
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f),
@@ -74,7 +74,7 @@ fun SearchScreen(
                     items(artists, key = Artist::id) { artist ->
                         Text(artist.name, modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp).clickable { onArtist(artist) }, style = MaterialTheme.typography.titleMedium, color = Cyan)
                     }
-                    item { Text("곡 · 내 기기 음악", modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
+                    item { Text("YouTube 곡 · 내 기기 음악", modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
                 }
                 items(results, key = Track::id) { track ->
                     TrackRow(track, { onPlay(track, results) })

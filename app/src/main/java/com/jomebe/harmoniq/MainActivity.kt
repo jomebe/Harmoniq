@@ -1,6 +1,8 @@
 package com.jomebe.harmoniq
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.os.Build
 import androidx.activity.ComponentActivity
@@ -44,6 +46,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.jomebe.harmoniq.ui.AppViewModel
 import com.jomebe.harmoniq.ui.components.AuroraBackground
 import com.jomebe.harmoniq.ui.components.MiniPlayer
@@ -75,6 +78,15 @@ private fun HarmoniqApp(viewModel: AppViewModel) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showPlayer by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val openOrPlay: (com.jomebe.harmoniq.domain.Track, List<com.jomebe.harmoniq.domain.Track>) -> Unit = { track, source ->
+        if (track.externalUrl.isNotBlank()) {
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(track.externalUrl)))
+        } else {
+            viewModel.play(track, source)
+            showPlayer = true
+        }
+    }
 
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
     val audioPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
@@ -131,10 +143,7 @@ private fun HarmoniqApp(viewModel: AppViewModel) {
             AuroraBackground {
                 Box(Modifier.fillMaxSize().padding(padding)) {
                     when (selectedTab) {
-                        0 -> HomeScreen(ui.personalized, ui.popular) { track, source ->
-                            viewModel.play(track, source)
-                            showPlayer = true
-                        }
+                        0 -> HomeScreen(ui.personalized, ui.popular, openOrPlay)
                         1 -> SearchScreen(
                             ui.searchQuery,
                             ui.searchResults,
@@ -142,14 +151,8 @@ private fun HarmoniqApp(viewModel: AppViewModel) {
                             viewModel::updateSearchQuery,
                             viewModel::search,
                             viewModel::openArtist
-                        ) { track, source ->
-                            viewModel.play(track, source)
-                            showPlayer = true
-                        }
-                        2 -> LibraryScreen(library.history, library.saved) { track, source ->
-                            viewModel.play(track, source)
-                            showPlayer = true
-                        }
+                        , openOrPlay)
+                        2 -> LibraryScreen(library.history, library.saved, openOrPlay)
                         else -> ProfileScreen(onClearHistory = viewModel::clearHistory)
                     }
                 }

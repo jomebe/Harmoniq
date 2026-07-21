@@ -1,11 +1,12 @@
 package com.jomebe.harmoniq.data.repository
 
+import com.jomebe.harmoniq.BuildConfig
 import com.jomebe.harmoniq.data.local.HarmoniqDao
 import com.jomebe.harmoniq.data.local.LocalMusicDataSource
 import com.jomebe.harmoniq.data.local.toHistoryEntity
 import com.jomebe.harmoniq.data.local.toSavedEntity
-import com.jomebe.harmoniq.data.remote.JamendoApi
-import com.jomebe.harmoniq.data.remote.JamendoTrack
+import com.jomebe.harmoniq.data.remote.YouTubeApi
+import com.jomebe.harmoniq.data.remote.YouTubeItem
 import com.jomebe.harmoniq.domain.Artist
 import com.jomebe.harmoniq.domain.RecommendationEngine
 import com.jomebe.harmoniq.domain.Track
@@ -15,40 +16,48 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class MusicRepository(
-    private val api: JamendoApi,
+    private val api: YouTubeApi,
     private val localMusic: LocalMusicDataSource,
     private val dao: HarmoniqDao,
     private val recommendationEngine: RecommendationEngine
 ) {
-    private val clientId = "f2215756" // Jamendo public client identifier, not a secret.
+    private val apiKey = BuildConfig.YOUTUBE_API_KEY
 
     fun observeHistory(): Flow<List<Track>> = dao.observeHistory().map { it.distinctBy { row -> row.trackId }.map { row -> row.toTrack() } }
     fun observeSaved(): Flow<List<Track>> = dao.observeSavedTracks().map { it.map { row -> row.toTrack() } }
 
-    // Jamendo permits up to 200 results per request. Several offsets keep the home feed varied.
     suspend fun popular(): List<Track> = coroutineScope {
-        listOf(0, 50, 100, 150).map { offset -> async { api.tracks(clientId, limit = 50, offset = offset, order = "popularity_total").results } }
-            .flatMap { it.await() }.map(::toTrack).distinctBy(Track::id).take(160)
+        listOf("popular music", "official music video", "new music").map { query ->
+            async { requireKey { api.searchVideos(apiKey, query = query).items.mapNotNull(::toTrack) } }
+        }.flatMap { it.await() }.distinctBy(Track::id).take(120)
     }
 
     suspend fun search(query: String): List<Track> = coroutineScope {
         val trimmed = query.trim()
         val local = async { localMusic.search(trimmed) }
-        val remote = async { api.tracks(clientId, limit = 100, search = trimmed).results.map(::toTrack) }
-        (local.await() + remote.await()).distinctBy(Track::id)
+        val videos = async {
+            requireKey {
+                api.searchVideos(apiKey, query = trimmed).items.mapNotNull(::toTrack)
+                    .sortedByDescending { track -> isOfficialArtistResult(track, trimmed) }
+            }
+        }
+        (local.await() + videos.await()).distinctBy(Track::id)
     }
 
-    suspend fun artists(query: String): List<Artist> = api.artists(clientId, query.trim()).results
-        .map { Artist(it.id, it.name, it.image) }
-        .sortedByDescending { it.name.equals(query.trim(), ignoreCase = true) }
+    suspend fun artists(query: String): List<Artist> = requireKey {
+        api.searchChannels(apiKey, query = query.trim()).items.mapNotNull { item ->
+            item.id.channelId?.let { Artist(it, item.snippet.channelTitle, thumbnail(item)) }
+        }.sortedByDescending { it.name.equals(query.trim(), ignoreCase = true) }
+    }
 
-    suspend fun tracksForArtist(artist: Artist): List<Track> =
-        api.tracks(clientId, limit = 100, artistId = artist.id, order = "popularity_total").results.map(::toTrack)
+    suspend fun tracksForArtist(artist: Artist): List<Track> = requireKey {
+        api.searchVideos(apiKey, query = "${artist.name} official music").items.mapNotNull(::toTrack)
+    }
 
     suspend fun personalized(): List<Track> = coroutineScope {
         val recent = dao.recentHistory().map { it.toTrack() }
         if (recent.isEmpty()) return@coroutineScope popular().shuffled()
-        val candidates = recommendationEngine.seedQueries(recent).take(6)
+        val candidates = recommendationEngine.seedQueries(recent).take(4)
             .map { query -> async { runCatching { search(query) }.getOrDefault(emptyList()) } }.flatMap { it.await() }
         recommendationEngine.rank(candidates, recent).take(40)
     }
@@ -60,11 +69,27 @@ class MusicRepository(
     suspend fun unsave(trackId: String) = dao.unsave(trackId)
     suspend fun clearHistory() = dao.clearHistory()
 
-    private fun toTrack(item: JamendoTrack): Track = Track(
-        id = "jamendo:${item.id}", title = item.name, artist = item.artist_name,
-        thumbnailUrl = item.image, streamUrl = item.audio, durationText = formatDuration(item.duration),
-        tags = (item.musicinfo?.tags?.genres.orEmpty() + item.musicinfo?.tags?.moods.orEmpty()).distinct()
-    )
+    private fun toTrack(item: YouTubeItem): Track? {
+        val videoId = item.id.videoId ?: return null
+        return Track(
+            id = "youtube:$videoId", title = item.snippet.title, artist = item.snippet.channelTitle,
+            thumbnailUrl = thumbnail(item), externalUrl = "https://www.youtube.com/watch?v=$videoId",
+            tags = listOf("YouTube")
+        )
+    }
 
-    private fun formatDuration(seconds: Int): String = if (seconds <= 0) "" else "%d:%02d".format(seconds / 60, seconds % 60)
+    private fun thumbnail(item: YouTubeItem): String = item.snippet.thumbnails.high?.url
+        ?: item.snippet.thumbnails.medium?.url ?: item.snippet.thumbnails.default?.url.orEmpty()
+
+    private fun isOfficialArtistResult(track: Track, query: String): Boolean {
+        val artist = track.artist.lowercase()
+        val normalizedQuery = query.lowercase()
+        return artist == normalizedQuery || artist == "$normalizedQuery - topic" ||
+            artist.contains(normalizedQuery) && track.title.lowercase().contains("official")
+    }
+
+    private suspend inline fun <T> requireKey(block: suspend () -> T): T {
+        check(apiKey.isNotBlank()) { "YouTube API 키가 설정되지 않았습니다." }
+        return block()
+    }
 }

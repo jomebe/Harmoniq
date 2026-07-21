@@ -6,6 +6,7 @@ data class Track(
     val artist: String,
     val thumbnailUrl: String,
     val streamUrl: String = "",
+    val externalUrl: String = "",
     val durationText: String = "",
     val publishedAt: String = "",
     val tags: List<String> = emptyList()

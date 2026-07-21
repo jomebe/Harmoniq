@@ -105,7 +105,7 @@ fun HomeScreen(
             Spacer(Modifier.height(30.dp))
         }
 
-        item { SectionTitle("Jamendo 인기 음악", "무료로 들을 수 있는 Jamendo 음악을 넉넉하게 모았어요") }
+        item { SectionTitle("YouTube 인기 음악", "공식 YouTube 앱 또는 웹에서 재생합니다") }
         items(popular.take(40), key = Track::id) { track ->
             TrackRow(track, { onPlay(track, popular) }, Modifier.padding(horizontal = 12.dp))
         }

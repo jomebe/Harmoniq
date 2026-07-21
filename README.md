@@ -1,11 +1,11 @@
 # Harmoniq
 
-Harmoniq는 Jamendo의 무료·합법 음악 카탈로그와 Android Media3를 사용하는 음악 앱입니다. Jamendo 검색, 내 기기 음악 검색, 자동 다음 곡, 로컬 취향 추천, 백그라운드 재생을 제공합니다.
+Harmoniq는 YouTube Data API 기반 음악 검색과 Android Media3 로컬 음악 재생을 제공하는 앱입니다. YouTube 검색 결과는 공식 YouTube 앱 또는 웹에서 열며, 내 기기 음악은 앱에서 재생할 수 있습니다.
 
 ## 주요 기능
 
-- Jamendo 인기 음악(여러 페이지 로드) 및 아티스트·곡·장르 검색
-- 정확한 아티스트 결과를 먼저 보여주며, 카탈로그에 없는 아티스트는 공식곡처럼 표시하지 않음
+- YouTube 음악·아티스트 검색 및 인기 음악 탐색
+- 공식/Topic 채널 결과를 우선 확인할 수 있는 아티스트 검색
 - MediaStore 기반 내 기기 음악 검색 및 재생
 - ExoPlayer 기반 MP3 스트리밍
 - MediaSessionService 백그라운드 재생
@@ -23,11 +23,11 @@ Android Studio에서 프로젝트를 열고 Gradle Sync 후 실행합니다. 별
 
 ## 구조
 
-- data: Jamendo REST API, MediaStore, Room, 저장소
+- data: YouTube Data API, MediaStore, Room, 저장소
 - domain: 트랙/큐 모델과 로컬 추천 엔진
 - player: Media3 MediaSessionService와 앱 컨트롤러
 - ui: Compose 화면, 컴포넌트, 테마
 
 ## 데이터와 라이선스
 
-음악 메타데이터와 스트림은 Jamendo API에서 제공됩니다. 각 음원의 권리와 접근 조건은 Jamendo가 제공하는 조건을 따릅니다. Harmoniq는 YouTube·Audius를 사용하지 않고, 음원을 다운로드하거나 재배포하지 않으며, 재생 기록은 사용자 기기에만 저장합니다.
+YouTube 검색 결과는 공식 YouTube 앱 또는 웹에서 재생됩니다. Harmoniq는 YouTube 동영상·음원을 다운로드, 추출하거나 백그라운드 재생을 우회하지 않으며, 로컬 음악 재생 기록만 사용자 기기에 저장합니다.
