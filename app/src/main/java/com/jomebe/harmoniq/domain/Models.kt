@@ -11,6 +11,12 @@ data class Track(
     val tags: List<String> = emptyList()
 )
 
+data class Artist(
+    val id: String,
+    val name: String,
+    val imageUrl: String = ""
+)
+
 data class PlaybackQueue(
     val tracks: List<Track> = emptyList(),
     val currentIndex: Int = -1

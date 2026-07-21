@@ -77,9 +77,13 @@ private fun HarmoniqApp(viewModel: AppViewModel) {
     val snackbar = remember { SnackbarHostState() }
 
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    val audioPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= 33) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            audioPermission.launch(Manifest.permission.READ_MEDIA_AUDIO)
+        } else {
+            audioPermission.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
         }
     }
     LaunchedEffect(ui.error) {
@@ -134,8 +138,10 @@ private fun HarmoniqApp(viewModel: AppViewModel) {
                         1 -> SearchScreen(
                             ui.searchQuery,
                             ui.searchResults,
+                            ui.artists,
                             viewModel::updateSearchQuery,
-                            viewModel::search
+                            viewModel::search,
+                            viewModel::openArtist
                         ) { track, source ->
                             viewModel.play(track, source)
                             showPlayer = true

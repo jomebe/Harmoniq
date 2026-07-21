@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.jomebe.harmoniq.AppContainer
 import com.jomebe.harmoniq.data.repository.MusicRepository
 import com.jomebe.harmoniq.domain.PlaybackQueue
+import com.jomebe.harmoniq.domain.Artist
 import com.jomebe.harmoniq.domain.Track
 import com.jomebe.harmoniq.player.PlaybackConnection
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +25,7 @@ data class AppUiState(
     val popular: List<Track> = emptyList(),
     val personalized: List<Track> = emptyList(),
     val searchResults: List<Track> = emptyList(),
+    val artists: List<Artist> = emptyList(),
     val searchQuery: String = "",
     val queue: PlaybackQueue = PlaybackQueue(),
     val isPlaying: Boolean = false,
@@ -75,7 +77,7 @@ class AppViewModel(
         val query = _uiState.value.searchQuery.trim()
         if (query.isEmpty()) return
         launchLoading {
-            _uiState.value = _uiState.value.copy(searchResults = repository.search(query))
+            _uiState.value = _uiState.value.copy(searchResults = repository.search(query), artists = repository.artists(query))
         }
     }
 
@@ -83,6 +85,10 @@ class AppViewModel(
         val popular = repository.popular()
         val personalized = runCatching { repository.personalized() }.getOrDefault(popular.shuffled())
         _uiState.value = _uiState.value.copy(popular = popular, personalized = personalized)
+    }
+
+    fun openArtist(artist: Artist) = launchLoading {
+        _uiState.value = _uiState.value.copy(searchQuery = artist.name, searchResults = repository.tracksForArtist(artist), artists = listOf(artist))
     }
 
     fun play(track: Track, source: List<Track>) {

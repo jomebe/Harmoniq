@@ -45,7 +45,7 @@ fun ProfileScreen(onClearHistory: () -> Unit) {
             Spacer(Modifier.height(14.dp))
             Text("계정 없이 바로 듣기", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
             Spacer(Modifier.height(7.dp))
-            Text("Audius의 공개 음악 카탈로그를 사용합니다. API 키나 유료 구독이 필요하지 않습니다.", color = TextSecondary)
+            Text("Jamendo의 무료·합법 음악 카탈로그와 내 기기 음악을 사용합니다. YouTube나 Audius는 사용하지 않습니다.", color = TextSecondary)
         }
         Spacer(Modifier.height(28.dp))
         SettingCard(Icons.Default.CloudDone, "추천 데이터", "앱에서 들은 아티스트와 장르를 기기에서 분석")
@@ -54,7 +54,7 @@ fun ProfileScreen(onClearHistory: () -> Unit) {
         SettingCard(Icons.Default.History, "재생 기록 초기화", "기기에 저장된 취향 데이터를 삭제", onClearHistory)
         Spacer(Modifier.weight(1f))
         Text("Harmoniq 2.0.0", color = TextSecondary, modifier = Modifier.align(Alignment.CenterHorizontally))
-        Text("Music catalog powered by Audius", color = TextSecondary, style = MaterialTheme.typography.labelSmall, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text("Music catalog powered by Jamendo", color = TextSecondary, style = MaterialTheme.typography.labelSmall, modifier = Modifier.align(Alignment.CenterHorizontally))
     }
 }
 

@@ -105,8 +105,8 @@ fun HomeScreen(
             Spacer(Modifier.height(30.dp))
         }
 
-        item { SectionTitle("Audius 인기 음악", "지금 커뮤니티에서 많이 재생되는 음악") }
-        items(popular.take(12), key = Track::id) { track ->
+        item { SectionTitle("Jamendo 인기 음악", "무료로 들을 수 있는 Jamendo 음악을 넉넉하게 모았어요") }
+        items(popular.take(40), key = Track::id) { track ->
             TrackRow(track, { onPlay(track, popular) }, Modifier.padding(horizontal = 12.dp))
         }
     }

@@ -1,6 +1,7 @@
 package com.jomebe.harmoniq.ui.screens
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.jomebe.harmoniq.domain.Track
+import com.jomebe.harmoniq.domain.Artist
 import com.jomebe.harmoniq.ui.components.EmptyState
 import com.jomebe.harmoniq.ui.components.TrackRow
 import com.jomebe.harmoniq.ui.theme.Cyan
@@ -32,8 +34,10 @@ import com.jomebe.harmoniq.ui.theme.Cyan
 fun SearchScreen(
     query: String,
     results: List<Track>,
+    artists: List<Artist>,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
+    onArtist: (Artist) -> Unit,
     onPlay: (Track, List<Track>) -> Unit
 ) {
     Column(Modifier.fillMaxSize()) {
@@ -58,13 +62,20 @@ fun SearchScreen(
             keyboardActions = KeyboardActions(onSearch = { onSearch() })
         )
 
-        if (results.isEmpty()) {
-            EmptyState("듣고 싶은 음악을 찾아보세요", "Audius의 공개 음악 카탈로그를 검색할 수 있어요")
+        if (results.isEmpty() && artists.isEmpty()) {
+            EmptyState("음악과 아티스트를 찾아보세요", if (query.isBlank()) "Jamendo의 무료 음악과 내 기기 음악을 함께 검색합니다" else "정확히 일치하는 아티스트가 없거나 재생 가능한 곡이 없습니다. 내 기기 음악도 확인해 보세요.")
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp)
             ) {
+                if (artists.isNotEmpty()) {
+                    item { Text("아티스트", modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
+                    items(artists, key = Artist::id) { artist ->
+                        Text(artist.name, modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp).clickable { onArtist(artist) }, style = MaterialTheme.typography.titleMedium, color = Cyan)
+                    }
+                    item { Text("곡 · 내 기기 음악", modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
+                }
                 items(results, key = Track::id) { track ->
                     TrackRow(track, { onPlay(track, results) })
                 }
