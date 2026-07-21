@@ -1,8 +1,6 @@
 package com.jomebe.harmoniq
 
 import android.Manifest
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.os.Build
 import androidx.activity.ComponentActivity
@@ -46,7 +44,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import com.jomebe.harmoniq.ui.AppViewModel
 import com.jomebe.harmoniq.ui.components.AuroraBackground
 import com.jomebe.harmoniq.ui.components.MiniPlayer
@@ -55,6 +52,7 @@ import com.jomebe.harmoniq.ui.screens.LibraryScreen
 import com.jomebe.harmoniq.ui.screens.PlayerScreen
 import com.jomebe.harmoniq.ui.screens.ProfileScreen
 import com.jomebe.harmoniq.ui.screens.SearchScreen
+import com.jomebe.harmoniq.ui.screens.YouTubePlayerScreen
 import com.jomebe.harmoniq.ui.theme.HarmoniqTheme
 
 class MainActivity : ComponentActivity() {
@@ -77,11 +75,11 @@ private fun HarmoniqApp(viewModel: AppViewModel) {
     val library by viewModel.library.collectAsState()
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showPlayer by rememberSaveable { mutableStateOf(false) }
+    var youtubeTrack by remember { mutableStateOf<com.jomebe.harmoniq.domain.Track?>(null) }
     val snackbar = remember { SnackbarHostState() }
-    val context = LocalContext.current
     val openOrPlay: (com.jomebe.harmoniq.domain.Track, List<com.jomebe.harmoniq.domain.Track>) -> Unit = { track, source ->
         if (track.externalUrl.isNotBlank()) {
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(track.externalUrl)))
+            youtubeTrack = track
         } else {
             viewModel.play(track, source)
             showPlayer = true
@@ -105,7 +103,9 @@ private fun HarmoniqApp(viewModel: AppViewModel) {
         }
     }
 
-    BackHandler(showPlayer) { showPlayer = false }
+    BackHandler(showPlayer || youtubeTrack != null) {
+        if (youtubeTrack != null) youtubeTrack = null else showPlayer = false
+    }
     val tabs = listOf(
         Tab("홈", Icons.Default.Home),
         Tab("검색", Icons.Default.Search),
@@ -178,6 +178,14 @@ private fun HarmoniqApp(viewModel: AppViewModel) {
                     }
                 )
             }
+        }
+
+        AnimatedVisibility(
+            visible = youtubeTrack != null,
+            enter = slideInVertically(tween(320)) { it } + fadeIn(),
+            exit = slideOutVertically(tween(260)) { it } + fadeOut()
+        ) {
+            youtubeTrack?.let { track -> YouTubePlayerScreen(track) { youtubeTrack = null } }
         }
 
         if (ui.isLoading) CircularProgressIndicator(Modifier.align(Alignment.Center))
