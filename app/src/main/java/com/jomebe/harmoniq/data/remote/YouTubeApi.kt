@@ -10,6 +10,8 @@ interface YouTubeApi {
         @Query("part") part: String = "snippet",
         @Query("type") type: String = "video",
         @Query("videoCategoryId") category: String = "10",
+        @Query("videoEmbeddable") embeddable: Boolean = true,
+        @Query("videoSyndicated") syndicated: Boolean = true,
         @Query("maxResults") limit: Int = 50,
         @Query("q") query: String,
         @Query("order") order: String = "relevance"
