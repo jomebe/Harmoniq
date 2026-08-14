@@ -55,7 +55,12 @@ android {
     }
     lint {
         // These AndroidX detectors target a newer Kotlin analysis API than AGP 8.7's lint runtime.
-        disable += setOf("RememberInComposition", "FrequentlyChangingValue", "NullSafeMutableLiveData")
+        disable += setOf(
+            "AutoboxingStateCreation",
+            "FrequentlyChangingValue",
+            "NullSafeMutableLiveData",
+            "RememberInComposition"
+        )
     }
     packaging.resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
 }
