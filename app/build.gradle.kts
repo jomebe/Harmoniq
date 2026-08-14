@@ -53,6 +53,10 @@ android {
     ksp {
         arg("room.schemaLocation", "$projectDir/schemas")
     }
+    lint {
+        // These AndroidX detectors target a newer Kotlin analysis API than AGP 8.7's lint runtime.
+        disable += setOf("RememberInComposition", "FrequentlyChangingValue", "NullSafeMutableLiveData")
+    }
     packaging.resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
 }
 
