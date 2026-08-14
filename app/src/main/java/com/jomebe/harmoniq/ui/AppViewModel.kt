@@ -77,18 +77,30 @@ class AppViewModel(
         val query = _uiState.value.searchQuery.trim()
         if (query.isEmpty()) return
         launchLoading {
-            _uiState.value = _uiState.value.copy(searchResults = repository.search(query), artists = repository.artists(query))
+            val results = repository.search(query)
+            val artists = repository.artists(query)
+            _uiState.value = _uiState.value.copy(
+                searchResults = results,
+                artists = artists,
+                error = repository.consumeRemoteError()
+            )
         }
     }
 
     fun refreshHome() = launchLoading {
         val popular = repository.popular()
-        val personalized = runCatching { repository.personalized() }.getOrDefault(popular.shuffled())
+        val personalized = popular.shuffled()
         _uiState.value = _uiState.value.copy(popular = popular, personalized = personalized)
     }
 
     fun openArtist(artist: Artist) = launchLoading {
-        _uiState.value = _uiState.value.copy(searchQuery = artist.name, searchResults = repository.tracksForArtist(artist), artists = listOf(artist))
+        val tracks = repository.tracksForArtist(artist)
+        _uiState.value = _uiState.value.copy(
+            searchQuery = artist.name,
+            searchResults = tracks,
+            artists = listOf(artist),
+            error = repository.consumeRemoteError()
+        )
     }
 
     fun play(track: Track, source: List<Track>) {

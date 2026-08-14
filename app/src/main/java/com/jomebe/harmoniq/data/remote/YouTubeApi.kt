@@ -35,12 +35,19 @@ interface YouTubeApi {
         @Query("videoCategoryId") category: String = "10",
         @Query("regionCode") region: String = "KR",
         @Query("maxResults") limit: Int = 50
-    ): YouTubeSearchResponse
+    ): YouTubeVideosResponse
 }
 
 data class YouTubeSearchResponse(val items: List<YouTubeItem> = emptyList())
+data class YouTubeVideosResponse(val items: List<YouTubeVideoItem> = emptyList())
 data class YouTubeItem(val id: YouTubeId, val snippet: YouTubeSnippet)
+data class YouTubeVideoItem(val id: String, val snippet: YouTubeSnippet)
 data class YouTubeId(val videoId: String? = null, val channelId: String? = null)
-data class YouTubeSnippet(val title: String, val channelTitle: String, val thumbnails: YouTubeThumbnails = YouTubeThumbnails())
+data class YouTubeSnippet(
+    val title: String,
+    val channelTitle: String,
+    val channelId: String = "",
+    val thumbnails: YouTubeThumbnails = YouTubeThumbnails()
+)
 data class YouTubeThumbnails(val high: YouTubeThumbnail? = null, val medium: YouTubeThumbnail? = null, val default: YouTubeThumbnail? = null)
 data class YouTubeThumbnail(val url: String)

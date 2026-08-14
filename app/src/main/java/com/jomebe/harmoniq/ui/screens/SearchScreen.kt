@@ -21,6 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -40,6 +41,7 @@ fun SearchScreen(
     onArtist: (Artist) -> Unit,
     onPlay: (Track, List<Track>) -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
     Column(Modifier.fillMaxSize()) {
         Text(
             "음악 검색",
@@ -52,14 +54,27 @@ fun SearchScreen(
             onValueChange = onQueryChange,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp),
             placeholder = { Text("곡, 아티스트, 앨범 검색") },
-            leadingIcon = { Icon(Icons.Default.Search, null, tint = Cyan) },
+            leadingIcon = {
+                IconButton(
+                    enabled = query.isNotBlank(),
+                    onClick = {
+                        focusManager.clearFocus()
+                        onSearch()
+                    }
+                ) {
+                    Icon(Icons.Default.Search, "검색", tint = Cyan)
+                }
+            },
             trailingIcon = {
                 if (query.isNotEmpty()) IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Default.Close, "지우기") }
             },
             shape = RoundedCornerShape(22.dp),
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { onSearch() })
+            keyboardActions = KeyboardActions(onSearch = {
+                focusManager.clearFocus()
+                onSearch()
+            })
         )
 
         if (results.isEmpty() && artists.isEmpty()) {
