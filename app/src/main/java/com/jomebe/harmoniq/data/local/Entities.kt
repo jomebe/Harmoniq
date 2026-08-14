@@ -11,12 +11,23 @@ data class HistoryEntity(
     val title: String,
     val artist: String,
     val thumbnailUrl: String,
-    val streamUrl: String,
+    val streamUrl: String = "",
+    val externalUrl: String = "",
+    val durationText: String = "",
     val tags: String,
     val playedAt: Long,
     val completed: Boolean
 ) {
-    fun toTrack() = Track(trackId, title, artist, thumbnailUrl, streamUrl, tags = tags.split('|').filter(String::isNotBlank))
+    fun toTrack() = Track(
+        id = trackId,
+        title = title,
+        artist = artist,
+        thumbnailUrl = thumbnailUrl,
+        streamUrl = streamUrl,
+        externalUrl = externalUrl,
+        durationText = durationText,
+        tags = tags.split('|').filter(String::isNotBlank)
+    )
 }
 
 @Entity(tableName = "saved_tracks")
@@ -25,12 +36,22 @@ data class SavedTrackEntity(
     val title: String,
     val artist: String,
     val thumbnailUrl: String,
-    val streamUrl: String,
-    val durationText: String,
+    val streamUrl: String = "",
+    val externalUrl: String = "",
+    val durationText: String = "",
     val tags: String,
     val savedAt: Long
 ) {
-    fun toTrack() = Track(trackId, title, artist, thumbnailUrl, streamUrl, durationText, tags = tags.split('|').filter(String::isNotBlank))
+    fun toTrack() = Track(
+        id = trackId,
+        title = title,
+        artist = artist,
+        thumbnailUrl = thumbnailUrl,
+        streamUrl = streamUrl,
+        externalUrl = externalUrl,
+        durationText = durationText,
+        tags = tags.split('|').filter(String::isNotBlank)
+    )
 }
 
 fun Track.toSavedEntity() = SavedTrackEntity(
@@ -39,6 +60,7 @@ fun Track.toSavedEntity() = SavedTrackEntity(
     artist = artist,
     thumbnailUrl = thumbnailUrl,
     streamUrl = streamUrl,
+    externalUrl = externalUrl,
     durationText = durationText,
     tags = tags.joinToString("|"),
     savedAt = System.currentTimeMillis()
@@ -50,7 +72,10 @@ fun Track.toHistoryEntity(completed: Boolean) = HistoryEntity(
     artist = artist,
     thumbnailUrl = thumbnailUrl,
     streamUrl = streamUrl,
+    externalUrl = externalUrl,
+    durationText = durationText,
     tags = tags.joinToString("|"),
     playedAt = System.currentTimeMillis(),
     completed = completed
 )
+

@@ -1,11 +1,11 @@
 package com.jomebe.harmoniq.data.repository
 
 import androidx.core.text.HtmlCompat
-import com.jomebe.harmoniq.BuildConfig
 import com.jomebe.harmoniq.data.local.HarmoniqDao
 import com.jomebe.harmoniq.data.local.LocalMusicDataSource
 import com.jomebe.harmoniq.data.local.toHistoryEntity
 import com.jomebe.harmoniq.data.local.toSavedEntity
+import com.jomebe.harmoniq.data.remote.ApiKeyManager
 import com.jomebe.harmoniq.data.remote.YouTubeApi
 import com.jomebe.harmoniq.data.remote.YouTubeItem
 import com.jomebe.harmoniq.data.remote.YouTubeSnippet
@@ -25,9 +25,9 @@ class MusicRepository(
     private val api: YouTubeApi,
     private val localMusic: LocalMusicDataSource,
     private val dao: HarmoniqDao,
-    private val recommendationEngine: RecommendationEngine
+    private val recommendationEngine: RecommendationEngine,
+    private val apiKeyManager: ApiKeyManager
 ) {
-    private val apiKey = BuildConfig.YOUTUBE_API_KEY
     private val searchMutex = Mutex()
     private val searchCache = linkedMapOf<String, CachedSearch>()
     private val artistTrackCache = linkedMapOf<String, CachedSearch>()
@@ -37,9 +37,13 @@ class MusicRepository(
     fun observeSaved(): Flow<List<Track>> = dao.observeSavedTracks().map { it.map { row -> row.toTrack() } }
 
     suspend fun popular(): List<Track> {
-        val ytTracks = runCatching {
-            requireKey { api.popularMusic(apiKey).items.mapNotNull(::toTrack) }
-        }.getOrDefault(emptyList())
+        val ytTracks: List<Track> = try {
+            apiKeyManager.executeWithRetry { key ->
+                api.popularMusic(key).items.mapNotNull { item: YouTubeVideoItem -> toTrack(item) }
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
 
         return if (ytTracks.isNotEmpty()) ytTracks else localMusic.search("")
     }
@@ -48,7 +52,7 @@ class MusicRepository(
         val trimmed = query.trim()
         val local = async { localMusic.search(trimmed) }
         val videos = async {
-            searchItems(trimmed).mapNotNull(::toTrack)
+            searchItems(trimmed).mapNotNull { item: YouTubeItem -> toTrack(item) }
                 .sortedByDescending { track -> isOfficialArtistResult(track, trimmed) }
         }
         (local.await() + videos.await()).distinctBy(Track::id)
@@ -68,28 +72,35 @@ class MusicRepository(
             .filter { it.expiresAt > now }
             .flatMap { it.items.asSequence() }
             .filter { it.snippet.channelId == artist.id }
-            .mapNotNull(::toTrack)
+            .mapNotNull { item: YouTubeItem -> toTrack(item) }
             .distinctBy(Track::id)
             .toList()
         if (fromSearch.isNotEmpty()) return@withLock fromSearch
 
         artistTrackCache[artist.id]?.takeIf { it.expiresAt > now }?.let { cached ->
             lastRemoteError = cached.errorMessage
-            return@withLock cached.items.mapNotNull(::toTrack)
+            return@withLock cached.items.mapNotNull { item: YouTubeItem -> toTrack(item) }
         }
 
-        val result = runCatching {
-            requireKey { api.searchVideos(apiKey, query = "official music", channelId = artist.id).items }
+        var items: List<YouTubeItem>
+        var errorMessage: String?
+        try {
+            items = apiKeyManager.executeWithRetry { key ->
+                api.searchVideos(key, query = "official music", channelId = artist.id).items
+            }
+            errorMessage = null
+        } catch (e: Exception) {
+            items = emptyList()
+            errorMessage = remoteErrorMessage(e)
         }
-        val errorMessage = result.exceptionOrNull()?.let(::remoteErrorMessage)
-        val items = result.getOrDefault(emptyList())
+
         lastRemoteError = errorMessage
         artistTrackCache[artist.id] = CachedSearch(
             items = items,
-            expiresAt = now + if (result.isSuccess) SUCCESS_CACHE_MS else ERROR_CACHE_MS,
+            expiresAt = now + if (errorMessage == null) SUCCESS_CACHE_MS else ERROR_CACHE_MS,
             errorMessage = errorMessage
         )
-        items.mapNotNull(::toTrack)
+        items.mapNotNull { item: YouTubeItem -> toTrack(item) }
     }
 
     suspend fun personalized(): List<Track> = coroutineScope {
@@ -138,11 +149,6 @@ class MusicRepository(
             artist.contains(normalizedQuery) && track.title.lowercase().contains("official")
     }
 
-    private suspend inline fun <T> requireKey(block: suspend () -> T): T {
-        check(apiKey.isNotBlank()) { "YouTube API 키가 설정되지 않았습니다." }
-        return block()
-    }
-
     private suspend fun searchItems(query: String): List<YouTubeItem> = searchMutex.withLock {
         val normalized = query.trim().lowercase()
         val now = System.currentTimeMillis()
@@ -151,15 +157,22 @@ class MusicRepository(
             return@withLock cached.items
         }
 
-        val result = runCatching {
-            requireKey { api.searchVideos(apiKey, query = query.trim()).items }
+        var items: List<YouTubeItem>
+        var errorMessage: String?
+        try {
+            items = apiKeyManager.executeWithRetry { key ->
+                api.searchVideos(key, query = query.trim()).items
+            }
+            errorMessage = null
+        } catch (e: Exception) {
+            items = emptyList()
+            errorMessage = remoteErrorMessage(e)
         }
-        val errorMessage = result.exceptionOrNull()?.let(::remoteErrorMessage)
-        val items = result.getOrDefault(emptyList())
+
         lastRemoteError = errorMessage
         searchCache[normalized] = CachedSearch(
             items = items,
-            expiresAt = now + if (result.isSuccess) SUCCESS_CACHE_MS else ERROR_CACHE_MS,
+            expiresAt = now + if (errorMessage == null) SUCCESS_CACHE_MS else ERROR_CACHE_MS,
             errorMessage = errorMessage
         )
         while (searchCache.size > MAX_SEARCH_CACHE_SIZE) {

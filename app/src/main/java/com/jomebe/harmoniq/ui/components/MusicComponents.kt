@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
@@ -75,12 +76,29 @@ fun TrackRow(
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = track.thumbnailUrl,
-            contentDescription = track.title,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.size(58.dp).clip(RoundedCornerShape(14.dp))
-        )
+        Box(
+            modifier = Modifier
+                .size(58.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Brush.linearGradient(listOf(Color(0xFF262338), Color(0xFF1E1B2E)))),
+            contentAlignment = Alignment.Center
+        ) {
+            if (track.thumbnailUrl.isNotBlank()) {
+                AsyncImage(
+                    model = track.thumbnailUrl,
+                    contentDescription = track.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Icon(
+                    Icons.Default.MusicNote,
+                    contentDescription = null,
+                    tint = Cyan.copy(alpha = 0.85f),
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
         Spacer(Modifier.width(13.dp))
         Column(Modifier.weight(1f)) {
             Text(
@@ -114,13 +132,25 @@ fun ArtworkCard(track: Track, onClick: () -> Unit, modifier: Modifier = Modifier
                 .aspectRatio(1f)
                 .shadow(20.dp, RoundedCornerShape(24.dp), ambientColor = Violet, spotColor = Cyan)
                 .clip(RoundedCornerShape(24.dp))
+                .background(Brush.linearGradient(listOf(Color(0xFF2E2648), Color(0xFF1B1B2F))))
         ) {
-            AsyncImage(
-                model = track.thumbnailUrl,
-                contentDescription = track.title,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            if (track.thumbnailUrl.isNotBlank()) {
+                AsyncImage(
+                    model = track.thumbnailUrl,
+                    contentDescription = track.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.MusicNote,
+                        contentDescription = null,
+                        tint = Cyan.copy(alpha = 0.85f),
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+            }
             Box(
                 Modifier
                     .align(Alignment.BottomEnd)
@@ -151,12 +181,29 @@ fun MiniPlayer(track: Track, isPlaying: Boolean, onOpen: () -> Unit, onTogglePla
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = track.thumbnailUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(13.dp))
-        )
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(13.dp))
+                .background(Brush.linearGradient(listOf(Color(0xFF262338), Color(0xFF1E1B2E)))),
+            contentAlignment = Alignment.Center
+        ) {
+            if (track.thumbnailUrl.isNotBlank()) {
+                AsyncImage(
+                    model = track.thumbnailUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Icon(
+                    Icons.Default.MusicNote,
+                    contentDescription = null,
+                    tint = Cyan.copy(alpha = 0.85f),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(track.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)

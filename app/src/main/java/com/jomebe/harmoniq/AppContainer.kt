@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.jomebe.harmoniq.data.local.HarmoniqDatabase
 import com.jomebe.harmoniq.data.local.LocalMusicDataSource
+import com.jomebe.harmoniq.data.remote.ApiKeyManager
 import com.jomebe.harmoniq.data.remote.YouTubeClient
 import com.jomebe.harmoniq.data.repository.MusicRepository
 import com.jomebe.harmoniq.domain.RecommendationEngine
@@ -17,7 +18,8 @@ class AppContainer(context: Context) {
     ).fallbackToDestructiveMigration().build()
 
     private val api = YouTubeClient.create()
+    private val apiKeyManager = ApiKeyManager(listOf(BuildConfig.YOUTUBE_API_KEY))
 
     val playback = PlaybackConnection(context)
-    val repository = MusicRepository(api, LocalMusicDataSource(context), database.dao(), RecommendationEngine())
+    val repository = MusicRepository(api, LocalMusicDataSource(context), database.dao(), RecommendationEngine(), apiKeyManager)
 }

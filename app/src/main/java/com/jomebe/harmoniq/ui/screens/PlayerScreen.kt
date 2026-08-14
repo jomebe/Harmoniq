@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
@@ -65,12 +66,30 @@ fun PlayerScreen(
                 }
             }
             Spacer(Modifier.height(20.dp))
-            AsyncImage(
-                model = track.thumbnailUrl,
-                contentDescription = track.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(32.dp))
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(Brush.linearGradient(listOf(Color(0xFF2E2648), Color(0xFF1B1B2F)))),
+                contentAlignment = Alignment.Center
+            ) {
+                if (track.thumbnailUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = track.thumbnailUrl,
+                        contentDescription = track.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.MusicNote,
+                        contentDescription = null,
+                        tint = Cyan.copy(alpha = 0.9f),
+                        modifier = Modifier.size(96.dp)
+                    )
+                }
+            }
             Spacer(Modifier.height(30.dp))
             Text(track.title, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
             Spacer(Modifier.height(8.dp))

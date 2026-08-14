@@ -1,8 +1,11 @@
 package com.jomebe.harmoniq
 
 import android.Manifest
-import android.os.Bundle
+import android.app.PictureInPictureParams
+import android.content.res.Configuration
 import android.os.Build
+import android.os.Bundle
+import android.util.Rational
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -45,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import com.jomebe.harmoniq.domain.Track
 import com.jomebe.harmoniq.ui.AppViewModel
 import com.jomebe.harmoniq.ui.components.AuroraBackground
 import com.jomebe.harmoniq.ui.components.MiniPlayer
@@ -61,28 +65,73 @@ class MainActivity : ComponentActivity() {
         AppViewModel.factory((application as HarmoniqApplication).container)
     }
 
+    private var isPipMode by mutableStateOf(false)
+    private var currentPlayingYoutubeTrack: Track? by mutableStateOf(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { HarmoniqTheme { HarmoniqApp(viewModel) } }
+        setContent {
+            HarmoniqTheme {
+                HarmoniqApp(
+                    viewModel = viewModel,
+                    isPipMode = isPipMode,
+                    activeYoutubeTrack = currentPlayingYoutubeTrack,
+                    onYoutubeTrackChange = { currentPlayingYoutubeTrack = it },
+                    onEnterPip = { enterPip() }
+                )
+            }
+        }
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (currentPlayingYoutubeTrack != null) {
+            enterPip()
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        isPipMode = isInPictureInPictureMode
+    }
+
+    private fun enterPip() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val params = PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational(16, 9))
+                    .build()
+                enterPictureInPictureMode(params)
+            } catch (_: Exception) {}
+        }
     }
 }
 
 private data class Tab(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
 @Composable
-private fun HarmoniqApp(viewModel: AppViewModel) {
+private fun HarmoniqApp(
+    viewModel: AppViewModel,
+    isPipMode: Boolean,
+    activeYoutubeTrack: Track?,
+    onYoutubeTrackChange: (Track?) -> Unit,
+    onEnterPip: () -> Unit
+) {
     val ui by viewModel.uiState.collectAsState()
     val library by viewModel.library.collectAsState()
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showPlayer by rememberSaveable { mutableStateOf(false) }
-    var youtubeTrack by remember { mutableStateOf<com.jomebe.harmoniq.domain.Track?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val focusManager = LocalFocusManager.current
-    val openOrPlay: (com.jomebe.harmoniq.domain.Track, List<com.jomebe.harmoniq.domain.Track>) -> Unit = { track, source ->
+
+    val openOrPlay: (Track, List<Track>) -> Unit = { track, source ->
         focusManager.clearFocus(force = true)
-        if (track.externalUrl.isNotBlank()) {
-            youtubeTrack = track
+        if (track.streamUrl.isNotBlank()) {
+            viewModel.play(track, source)
+            showPlayer = true
+        } else if (track.id.startsWith("youtube:") || track.externalUrl.isNotBlank()) {
+            onYoutubeTrackChange(track)
         } else {
             viewModel.play(track, source)
             showPlayer = true
@@ -106,9 +155,10 @@ private fun HarmoniqApp(viewModel: AppViewModel) {
         }
     }
 
-    BackHandler(showPlayer || youtubeTrack != null) {
-        if (youtubeTrack != null) youtubeTrack = null else showPlayer = false
+    BackHandler(showPlayer || activeYoutubeTrack != null) {
+        if (activeYoutubeTrack != null) onYoutubeTrackChange(null) else showPlayer = false
     }
+
     val tabs = listOf(
         Tab("홈", Icons.Default.Home),
         Tab("검색", Icons.Default.Search),
@@ -117,80 +167,91 @@ private fun HarmoniqApp(viewModel: AppViewModel) {
     )
 
     Box(Modifier.fillMaxSize()) {
-        Scaffold(
-            snackbarHost = { SnackbarHost(snackbar) },
-            bottomBar = {
-                Column {
-                    ui.queue.current?.let { track ->
-                        MiniPlayer(
-                            track = track,
-                            isPlaying = ui.isPlaying,
-                            onOpen = { showPlayer = true },
-                            onTogglePlayback = viewModel::togglePlayback,
-                            onNext = viewModel::playNext
-                        )
-                    }
-                    NavigationBar {
-                        tabs.forEachIndexed { index, tab ->
-                            NavigationBarItem(
-                                selected = selectedTab == index,
-                                onClick = { selectedTab = index },
-                                icon = { Icon(tab.icon, tab.label) },
-                                label = { Text(tab.label) }
+        if (!isPipMode) {
+            Scaffold(
+                snackbarHost = { SnackbarHost(snackbar) },
+                bottomBar = {
+                    Column {
+                        ui.queue.current?.let { track ->
+                            MiniPlayer(
+                                track = track,
+                                isPlaying = ui.isPlaying,
+                                onOpen = { showPlayer = true },
+                                onTogglePlayback = viewModel::togglePlayback,
+                                onNext = viewModel::playNext
                             )
+                        }
+                        NavigationBar {
+                            tabs.forEachIndexed { index, tab ->
+                                NavigationBarItem(
+                                    selected = selectedTab == index,
+                                    onClick = { selectedTab = index },
+                                    icon = { Icon(tab.icon, tab.label) },
+                                    label = { Text(tab.label) }
+                                )
+                            }
+                        }
+                    }
+                }
+            ) { padding ->
+                AuroraBackground {
+                    Box(Modifier.fillMaxSize().padding(padding)) {
+                        when (selectedTab) {
+                            0 -> HomeScreen(ui.personalized, ui.popular, openOrPlay)
+                            1 -> SearchScreen(
+                                ui.searchQuery,
+                                ui.searchResults,
+                                ui.artists,
+                                viewModel::updateSearchQuery,
+                                viewModel::search,
+                                viewModel::openArtist,
+                                openOrPlay
+                            )
+                            2 -> LibraryScreen(library.history, library.saved, openOrPlay)
+                            else -> ProfileScreen(onClearHistory = viewModel::clearHistory)
                         }
                     }
                 }
             }
-        ) { padding ->
-            AuroraBackground {
-                Box(Modifier.fillMaxSize().padding(padding)) {
-                    when (selectedTab) {
-                        0 -> HomeScreen(ui.personalized, ui.popular, openOrPlay)
-                        1 -> SearchScreen(
-                            ui.searchQuery,
-                            ui.searchResults,
-                            ui.artists,
-                            viewModel::updateSearchQuery,
-                            viewModel::search,
-                            viewModel::openArtist
-                        , openOrPlay)
-                        2 -> LibraryScreen(library.history, library.saved, openOrPlay)
-                        else -> ProfileScreen(onClearHistory = viewModel::clearHistory)
-                    }
+
+            AnimatedVisibility(
+                visible = showPlayer && ui.queue.current != null,
+                enter = slideInVertically(tween(320)) { it } + fadeIn(),
+                exit = slideOutVertically(tween(260)) { it } + fadeOut()
+            ) {
+                ui.queue.current?.let { track ->
+                    PlayerScreen(
+                        track = track,
+                        isSaved = library.saved.any { it.id == track.id },
+                        isPlaying = ui.isPlaying,
+                        onClose = { showPlayer = false },
+                        onPrevious = viewModel::playPrevious,
+                        onNext = viewModel::playNext,
+                        onTogglePlayback = viewModel::togglePlayback,
+                        onToggleSaved = {
+                            if (library.saved.any { it.id == track.id }) viewModel.unsave(track) else viewModel.save(track)
+                        }
+                    )
                 }
             }
         }
 
+        // YouTube 플레이어 (일반 모드 및 PiP 모드 지원)
         AnimatedVisibility(
-            visible = showPlayer && ui.queue.current != null,
+            visible = activeYoutubeTrack != null,
             enter = slideInVertically(tween(320)) { it } + fadeIn(),
             exit = slideOutVertically(tween(260)) { it } + fadeOut()
         ) {
-            ui.queue.current?.let { track ->
-                PlayerScreen(
+            activeYoutubeTrack?.let { track ->
+                YouTubePlayerScreen(
                     track = track,
-                    isSaved = library.saved.any { it.id == track.id },
-                    isPlaying = ui.isPlaying,
-                    onClose = { showPlayer = false },
-                    onPrevious = viewModel::playPrevious,
-                    onNext = viewModel::playNext,
-                    onTogglePlayback = viewModel::togglePlayback,
-                    onToggleSaved = {
-                        if (library.saved.any { it.id == track.id }) viewModel.unsave(track) else viewModel.save(track)
-                    }
+                    isPipMode = isPipMode,
+                    onEnterPip = onEnterPip,
+                    onClose = { onYoutubeTrackChange(null) }
                 )
             }
         }
 
-        AnimatedVisibility(
-            visible = youtubeTrack != null,
-            enter = slideInVertically(tween(320)) { it } + fadeIn(),
-            exit = slideOutVertically(tween(260)) { it } + fadeOut()
-        ) {
-            youtubeTrack?.let { track -> YouTubePlayerScreen(track) { youtubeTrack = null } }
-        }
-
-        if (ui.isLoading) CircularProgressIndicator(Modifier.align(Alignment.Center))
+        if (ui.isLoading && !isPipMode) CircularProgressIndicator(Modifier.align(Alignment.Center))
     }
 }
