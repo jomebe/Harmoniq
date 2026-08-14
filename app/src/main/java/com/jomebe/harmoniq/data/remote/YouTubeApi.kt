@@ -14,7 +14,8 @@ interface YouTubeApi {
         @Query("videoSyndicated") syndicated: Boolean = true,
         @Query("maxResults") limit: Int = 50,
         @Query("q") query: String,
-        @Query("order") order: String = "relevance"
+        @Query("order") order: String = "relevance",
+        @Query("channelId") channelId: String? = null
     ): YouTubeSearchResponse
 
     @GET("youtube/v3/search")

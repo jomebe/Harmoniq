@@ -44,6 +44,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import com.jomebe.harmoniq.ui.AppViewModel
 import com.jomebe.harmoniq.ui.components.AuroraBackground
 import com.jomebe.harmoniq.ui.components.MiniPlayer
@@ -77,7 +78,9 @@ private fun HarmoniqApp(viewModel: AppViewModel) {
     var showPlayer by rememberSaveable { mutableStateOf(false) }
     var youtubeTrack by remember { mutableStateOf<com.jomebe.harmoniq.domain.Track?>(null) }
     val snackbar = remember { SnackbarHostState() }
+    val focusManager = LocalFocusManager.current
     val openOrPlay: (com.jomebe.harmoniq.domain.Track, List<com.jomebe.harmoniq.domain.Track>) -> Unit = { track, source ->
+        focusManager.clearFocus(force = true)
         if (track.externalUrl.isNotBlank()) {
             youtubeTrack = track
         } else {

@@ -1,5 +1,6 @@
 package com.jomebe.harmoniq.data.repository
 
+import androidx.core.text.HtmlCompat
 import com.jomebe.harmoniq.BuildConfig
 import com.jomebe.harmoniq.data.local.HarmoniqDao
 import com.jomebe.harmoniq.data.local.LocalMusicDataSource
@@ -51,7 +52,7 @@ class MusicRepository(
     }
 
     suspend fun tracksForArtist(artist: Artist): List<Track> = requireKey {
-        api.searchVideos(apiKey, query = "${artist.name} official music").items.mapNotNull(::toTrack)
+        api.searchVideos(apiKey, query = "official music", channelId = artist.id).items.mapNotNull(::toTrack)
     }
 
     suspend fun personalized(): List<Track> = coroutineScope {
@@ -72,8 +73,11 @@ class MusicRepository(
     private fun toTrack(item: YouTubeItem): Track? {
         val videoId = item.id.videoId ?: return null
         return Track(
-            id = "youtube:$videoId", title = item.snippet.title, artist = item.snippet.channelTitle,
-            thumbnailUrl = thumbnail(item), externalUrl = "https://www.youtube.com/watch?v=$videoId",
+            id = "youtube:$videoId",
+            title = HtmlCompat.fromHtml(item.snippet.title, HtmlCompat.FROM_HTML_MODE_LEGACY).toString(),
+            artist = item.snippet.channelTitle,
+            thumbnailUrl = thumbnail(item),
+            externalUrl = "https://www.youtube.com/watch?v=$videoId",
             tags = listOf("YouTube")
         )
     }
